@@ -1,0 +1,91 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User{
+  id Int @id @default(autoincrement())
+  email String @unique
+  password String?
+  username  String    @unique
+  isVerified Boolean  @default(false)
+  created_at DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+   // Relations
+  recipes   Recipe[]
+  comments  Comment[]
+  likes     Like[]
+  
+}
+
+model UserOTP{
+  id         String   @id @default(cuid())
+  email     String
+  token      String
+  expiresAt  DateTime
+  verified   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  // Relation to user
+  
+}
+
+model Recipe {
+  id          Int        @id @default(autoincrement())
+  title       String
+  description String?
+  ingredients String[]   // stored as array (Postgres recommended)
+  steps       String[]
+  prepTime    Int        // in minutes 
+  image         String?
+  imagePublicId String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Foreign key
+  authorId Int
+  author   User         @relation(fields: [authorId], references: [id])
+
+  // Relations
+  comments Comment[]
+  likes    Like[]
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  content   String
+  createdAt DateTime @default(now())
+
+  // Foreign keys
+  authorId Int
+  recipeId Int
+
+  author   User   @relation(fields: [authorId], references: [id])
+  recipe   Recipe @relation(fields: [recipeId], references: [id])
+}
+
+model Like {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+
+  // Foreign keys
+  userId   Int
+  recipeId Int
+
+  user     User   @relation(fields: [userId], references: [id])
+  recipe   Recipe @relation(fields: [recipeId], references: [id])
+
+  // Prevent duplicate likes
+  @@unique([userId, recipeId])
+}
