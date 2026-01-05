@@ -33,11 +33,16 @@ app.use('/api/v1/recipe',recipeRoute)
 
 app.get("/test-db", async (req, res) => {
     try {
-      const { prisma } = require('./lib/prisma');
+      const prisma = require('./lib/prisma'); // No curly braces if using module.exports
       await prisma.$connect();
       res.send("Database connected successfully!");
     } catch (error) {
-      res.status(500).send("DB Error: " + error.message);
+      console.error(error);
+      res.status(500).json({ 
+          message: "DB Error", 
+          error: error.message,
+          env: process.env.DATABASE_URL ? "URL is set" : "URL is MISSING" 
+      });
     }
   });
 
