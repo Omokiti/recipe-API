@@ -1,7 +1,8 @@
 
-const { PrismaClient } = require("@prisma/client");
+// const { PrismaClient } = require("@prisma/client");
+const prisma = require("../lib/prisma");
 const { cloudinary } = require("../utility/cloudinary");
-const prisma = new PrismaClient();
+// const prisma = new PrismaClient();
 
 const createRecipe = async(req,res)=>{
    const{title,description,ingredients,steps,prepTime} = req.body;
@@ -54,6 +55,108 @@ const getRecipes =async(req,res)=>{
     }
 }
 
+
+
+
+const getRecipeDetails =async(req,res)=>{
+    const{ recipeId } = req.params
+    try {
+        const recipe = await prisma.recipe.findUnique({
+
+            where: {
+                id: Number(recipeId),
+              },
+              include: {
+                comments: {
+                  orderBy: {
+                    createdAt: "desc",
+                  },
+                  include: {
+                    user: {
+                      select: {
+                        username: true,
+                      },
+                    },
+                  },
+                },
+              },
+            
+            });
+        if(!recipe){
+            return res.status(400).json({message:'Recipe not found'})
+        }
+        res.status(200).json(recipe)
+    } catch (error) {
+        console.error(error)
+        return res.status(400).json({error:error.message})
+    }
+}
+
+const myRecipe=async(req,res)=>{
+    const authorId = req.user.id
+
+    try {
+        const recipes = await prisma.recipe.findMany({
+            where:{
+                authorId:authorId
+            },
+            orderBy:{id:'desc'}
+        });
+        if(recipes.length === 0){
+            return res.status(400).json({message:'Recipe not found for this user'})
+        }
+        return res.status(200).json({
+        count:recipes.length,
+        recipes
+        })
+    } catch (error) {
+        console.error(error)
+        return res.status(500).json({error:error.message})
+    }
+}
+
+const myActivity = async(req,res)=>{
+    const userId = req.user.id
+     try {
+        const comments = await prisma.comment.findMany({
+            where:{
+            authorId:userId
+            },
+            include:{
+            recipe:{
+            select:{
+             title:true
+            }
+            }
+            },
+            orderBy:{id:'desc'}
+        });
+        const likes = await prisma.like.findMany({
+            where:{
+            userId
+            },
+            include:{
+            recipe:{
+            select:{
+            title:true
+                }
+            }
+            }
+        })
+        if(comments.length === 0 && likes.length === 0){
+            return res.status(400).json({message:'no activity found for this user'})
+        }
+        
+        return res.status(200).json({
+        comments,
+        likes
+        })
+    } catch (error) {
+        console.error(error)
+        return res.status(500).json({error:error.message})
+    }
+}
+
 const searchByIngredient = async(req,res)=>{
     const{ ingredient } = req.query
 
@@ -92,7 +195,7 @@ const togglelikeRecipe=async(req,res)=>{
             where:{
                 userId_recipeId:{
                     userId,
-                    recipeId:Number(recipeId)
+                    id:Number(recipeId)
                 }
             }
         })
@@ -101,7 +204,8 @@ const togglelikeRecipe=async(req,res)=>{
                 where:{
                     userId_recipeId:{
                         userId,
-                        recipeId:Number(recipeId)
+                        id:Number(recipeId),
+                        
                     }
                 }
             })
@@ -124,7 +228,7 @@ const togglelikeRecipe=async(req,res)=>{
 
  const updateRecipe =async(req,res)=>{
     const{ recipeId}=req.params;
-    const{ title, description, ingredients, steps ,prepTime }= req.body
+    const{ title, description, ingredients, steps ,prepTime,}= req.body;
     const userId = req.user.id;
 
     try {
@@ -132,6 +236,12 @@ const togglelikeRecipe=async(req,res)=>{
         if(!recipe || recipe.authorId !== userId){
             return res.status(403).json({error:'Not allowed'})
         }
+
+        const prepTimeNumber = Number(prepTime);
+        if (isNaN(prepTimeNumber)) {
+          return res.status(400).json({ message: "prepTime must be a number" });
+        }
+
 
         let imageUrl = recipe.image
         let imagePublicId = recipe.imagePublicId
@@ -159,20 +269,20 @@ const togglelikeRecipe=async(req,res)=>{
             steps:Array.isArray(steps)
             ? steps
             : steps.split(',').map(s => s.trim()),
-            prepTime,
+            prepTime:prepTimeNumber,
             image:imageUrl,
             imagePublicId
         
         }
         });
-        res.json(updated)
+        res.status(200).json({ message:'updated successfully',updated})
     } catch (err) {
         res.status(400).json({error: err.message})
     }
 }
 
 const deleteRecipe=async(req,res)=>{
-    const{recipeId}=req.params
+    const{ recipeId }=req.params
     const userId = req.user.id
     try {
         const recipe = await prisma.recipe.findUnique({where:{id:Number(recipeId)}})
@@ -243,10 +353,13 @@ const deleteRecipe=async(req,res)=>{
 module.exports={
 createRecipe,
 getRecipes,
+getRecipeDetails,
+myRecipe,
 searchByIngredient,
 togglelikeRecipe,
 updateRecipe,
 addComment,
 getComment,
-deleteRecipe
+deleteRecipe,
+myActivity
 }

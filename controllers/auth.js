@@ -1,10 +1,11 @@
 
-const { PrismaClient } = require("@prisma/client");
+// const { PrismaClient } = require("@prisma/client");
+const prisma = require("../lib/prisma");
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const{generateOtp,getExpiry} = require('../utility/otputils.js')
 const{sendUserOTPEmail} = require('../utility/email.js')
-const prisma = new PrismaClient();
+// const prisma = new PrismaClient();
 
 require('dotenv').config();
 

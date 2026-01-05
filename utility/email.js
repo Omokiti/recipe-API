@@ -38,8 +38,7 @@ const transporter = nodemailer.createTransport({
         await transporter.sendMail(mailOptions)
         console.log(`Otp send to ${email}`)
     } catch (error) {
-        console.error('Error sending account verefication email', error)
-        throw error;
+        
     }
 }
 module.exports={

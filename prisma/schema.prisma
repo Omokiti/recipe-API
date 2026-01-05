@@ -72,7 +72,7 @@ model Comment {
   recipeId Int
 
   author   User   @relation(fields: [authorId], references: [id])
-  recipe   Recipe @relation(fields: [recipeId], references: [id])
+  recipe   Recipe @relation(fields: [recipeId], references: [id],onDelete: Cascade )
 }
 
 model Like {
@@ -84,7 +84,7 @@ model Like {
   recipeId Int
 
   user     User   @relation(fields: [userId], references: [id])
-  recipe   Recipe @relation(fields: [recipeId], references: [id])
+  recipe   Recipe @relation(fields: [recipeId], references: [id],onDelete: Cascade)
 
   // Prevent duplicate likes
   @@unique([userId, recipeId])
