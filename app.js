@@ -27,8 +27,20 @@ app.use(passport.initialize())
 app.use('/api/v1/auth',authRoute)
 app.use('/api/v1/recipe',recipeRoute)
 
-app.get("/",(req,res)=>{
-    return res.send('API working')
-})
+// app.get("/",(req,res)=>{
+//     return res.send('API working')
+// })
+
+app.get("/test-db", async (req, res) => {
+    try {
+      const { prisma } = require('./lib/prisma');
+      await prisma.$connect();
+      res.send("Database connected successfully!");
+    } catch (error) {
+      res.status(500).send("DB Error: " + error.message);
+    }
+  });
+
+
 
 module.exports= app;
