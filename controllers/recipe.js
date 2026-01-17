@@ -72,7 +72,7 @@ const getRecipeDetails =async(req,res)=>{
                     createdAt: "desc",
                   },
                   include: {
-                    user: {
+                    author: {
                       select: {
                         username: true,
                       },
