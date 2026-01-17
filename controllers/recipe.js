@@ -226,60 +226,66 @@ const togglelikeRecipe=async(req,res)=>{
         } 
     }
 
- const updateRecipe =async(req,res)=>{
-    const{ recipeId}=req.params;
-    const{ title, description, ingredients, steps ,prepTime,}= req.body;
-    const userId = req.user.id;
-
-    try {
-        const recipe = await prisma.recipe.findUnique({where:{id:Number(recipeId)}});
-        if(!recipe || recipe.authorId !== userId){
-            return res.status(403).json({error:'Not allowed'})
-        }
-
-        const prepTimeNumber = Number(prepTime);
-        if (isNaN(prepTimeNumber)) {
-          return res.status(400).json({ message: "prepTime must be a number" });
-        }
-
-
-        let imageUrl = recipe.image
-        let imagePublicId = recipe.imagePublicId
-
-        if(req.file){
-            if(recipe.imagePublicId){
-                await cloudinary.uploader.destroy(recipe.imagePublicId)
-            }
-        }
-        const uploadResult = await cloudinary.uploader.upload(req.file.path, {
-            folder: "recipez",
-          });
+    const updateRecipe = async (req, res) => {
+        const { recipeId } = req.params;
+        const { title, description, ingredients, steps, prepTime } = req.body;
+        const userId = req.user.id;
     
-          imageUrl = uploadResult.secure_url;
-          imagePublicId = uploadResult.public_id;
-        
-        const updated = await prisma.recipe.update({
-            where:{id:Number(recipeId)},
-            data:{
-            title,
-            description,
-            ingredients:Array.isArray(ingredients)
-            ? ingredients
-            : ingredients.split(',').map(i => i.trim()),
-            steps:Array.isArray(steps)
-            ? steps
-            : steps.split(',').map(s => s.trim()),
-            prepTime:prepTimeNumber,
-            image:imageUrl,
-            imagePublicId
-        
+        try {
+            const recipe = await prisma.recipe.findUnique({ where: { id: Number(recipeId) } });
+            if (!recipe || recipe.authorId !== userId) {
+                return res.status(403).json({ error: 'Not allowed' });
+            }
+    
+            const prepTimeNumber = Number(prepTime);
+            if (isNaN(prepTimeNumber)) {
+                return res.status(400).json({ message: "prepTime must be a number" });
+            }
+    
+            // 1. Initialize with existing data
+            let imageUrl = recipe.image;
+            let imagePublicId = recipe.imagePublicId;
+    
+            // 2. ONLY run this block if a NEW file was uploaded
+            if (req.file) {
+                // Delete the old image from Cloudinary if it exists
+                if (recipe.imagePublicId) {
+                    await cloudinary.uploader.destroy(recipe.imagePublicId);
+                }
+    
+                // Upload the NEW file
+                const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+                    folder: "recipez",
+                });
+    
+                imageUrl = uploadResult.secure_url;
+                imagePublicId = uploadResult.public_id;
+            }
+    
+            // 3. Update the database
+            const updated = await prisma.recipe.update({
+                where: { id: Number(recipeId) },
+                data: {
+                    title,
+                    description,
+                    ingredients: Array.isArray(ingredients)
+                        ? ingredients
+                        : ingredients.split(',').map(i => i.trim()),
+                    steps: Array.isArray(steps)
+                        ? steps
+                        : steps.split(',').map(s => s.trim()),
+                    prepTime: prepTimeNumber,
+                    image: imageUrl, // Will be the old URL if no new file, or new URL if uploaded
+                    imagePublicId
+                }
+            });
+    
+            res.status(200).json({ message: 'updated successfully', updated });
+        } catch (err) {
+            console.error(err);
+            res.status(400).json({ error: err.message });
         }
-        });
-        res.status(200).json({ message:'updated successfully',updated})
-    } catch (err) {
-        res.status(400).json({error: err.message})
     }
-}
 
 const deleteRecipe=async(req,res)=>{
     const{ recipeId }=req.params
