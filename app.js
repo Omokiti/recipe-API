@@ -1,5 +1,8 @@
 
-require('dotenv').config()
+
+if (process.env.NODE_ENV !== 'production') {
+    require('dotenv').config();
+  }
 
 const express = require('express')
 const cors = require('cors')
@@ -15,9 +18,9 @@ const recipeRoute = require('./route/recipe')
 //middleware
 
 app.use(cors({
-    origin: ["http://localhost:3000", // your frontend URL
-    "https://your-frontend.vercel.app"],
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    origin: 'https://recipez-zeta.vercel.app', // your frontend URL
+    methods: ["GET", "POST", "PUT","PATCH", "DELETE","OPTIONS"],
+    allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
   }));
 
@@ -33,7 +36,7 @@ app.use('/api/v1/recipe',recipeRoute)
 
 app.get("/test-db", async (req, res) => {
     try {
-      const prisma = require('./lib/prisma'); // No curly braces if using module.exports
+      const prisma = require('./lib/prisma'); 
       await prisma.$connect();
       res.send("Database connected successfully!");
     } catch (error) {
