@@ -18,7 +18,7 @@ const recipeRoute = require('./route/recipe')
 //middleware
 
 app.use(cors({
-    origin: 'https://recipez-zeta.vercel.app', // your frontend URL
+    origin : [   "http://localhost:3000", 'https://recipez-zeta.vercel.app'], // your frontend URL
     methods: ["GET", "POST", "PUT","PATCH", "DELETE","OPTIONS"],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
@@ -30,9 +30,9 @@ app.use(passport.initialize())
 app.use('/api/v1/auth',authRoute)
 app.use('/api/v1/recipe',recipeRoute)
 
-// app.get("/",(req,res)=>{
-//     return res.send('API working')
-// })
+app.get("/",(req,res)=>{
+    return res.send('API working')
+})
 
 app.get("/test-db", async (req, res) => {
     try {
